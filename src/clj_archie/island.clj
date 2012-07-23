@@ -31,6 +31,8 @@
             :goods-production-factor (random-plus-minus pop 0.5)
             )))
 
+(defn str-island [{population :population location :location}]
+    (str "population=" (pad-num population 8) " location=" location))
 
 (comment "
 --

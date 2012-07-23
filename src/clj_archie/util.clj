@@ -13,3 +13,9 @@
         (+
             (Math/pow (- x2 x1) 2)
             (Math/pow (- y2 y1) 2))))
+
+(defn pad-num [x pad-chars]
+    (let [
+        sval (str x)
+        slen (count sval)]
+        (str sval (reduce str (repeat (- pad-chars slen) " ")))))
