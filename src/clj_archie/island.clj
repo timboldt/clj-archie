@@ -1,20 +1,36 @@
 (ns clj-archie.island
       (:use [clj-archie.util]))
 
-(comment "
-island structure:
-        --
-        foodStored :: Integer,                  -- food in storage
-        rawMaterialStored :: Integer,           -- raw materials in storage
-        goodsStored :: Integer,                 -- goods in storage
-        --
-        -- Invariant properties
-        --
-        location :: (Integer, Integer),         -- location of island: (x,y)
-        foodProductionFactor :: Integer,        -- # workers at which food production is 1:1
-        rawResourceProductionFactor :: Integer, -- # workers at which raw resource production is 1:1
-        goodsProductionFactor :: Integer        -- # workers at which manufactured goods production is 1:1)
-")
+(comment "island structure"
+{   :population                 ;population
+    :food-stored                ;food in storage
+    :rawmat-stored              ;raw materials in storage
+    :goods-stored               ;goods in storage
+    :location                   ;vector containing location of island [x y]
+    :food-production-factor     ;# workers at which food production is 1:1
+    :rawmat-production-factor   ;# workers at which raw resource production is 1:1
+    :goods-production-factor    ;# workers at which manufactured goods production is 1:1)
+})
+
+(defn- random-plus-minus [val plus-minus-pct]
+    (long (Math/round (* val (+ (- 1.0 plus-minus-pct) (rand (* 2.0 plus-minus-pct)))))))
+
+(defn random-island [map-width map-height]
+    (let [
+        pop (+ 50 (rand-int 500))
+        ninety-percent (/ (* 10 pop) 9)
+        twenty-percent (/ pop 5)]
+        (hash-map
+            :population pop
+            :food-stored (random-plus-minus pop 0.1)
+            :rawmat-stored (random-plus-minus pop 0.1)
+            :goods-stored (random-plus-minus pop 0.1)
+            :location [(rand map-width) (rand map-height)]
+            :food-production-factor (random-plus-minus pop 0.3)
+            :rawmat-production-factor (random-plus-minus pop 0.5)
+            :goods-production-factor (random-plus-minus pop 0.5)
+            )))
+
 
 (comment "
 --
