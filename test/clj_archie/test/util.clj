@@ -26,22 +26,22 @@
 (deftest test-distance
     (testing "Distance between points"
         (testing "with identical points"
-            (is (= 0.0 (distance-from [0 0] [0 0])))
-            (is (= 0.0 (distance-from [-99 -99] [-99 -99])))
-            (is (= 0.0 (distance-from [99 -99] [99 -99])))
-            (is (= 0.0 (distance-from [-99 99] [-99 99])))
-            (is (= 0.0 (distance-from [1.2345 6.789] [1.2345 6.789]))))
+            (is (== 0 (distance-from [0 0] [0 0])))
+            (is (== 0 (distance-from [-99 -99] [-99 -99])))
+            (is (== 0 (distance-from [99 -99] [99 -99])))
+            (is (== 0 (distance-from [-99 99] [-99 99])))
+            (is (== 0 (distance-from [1.2345 6.789] [1.2345 6.789]))))
         (testing "with horizontal points"
-            (is (= 100.0 (distance-from [0 0] [100 0])))
-            (is (= 198.0 (distance-from [-99 -99] [99 -99])))
-            (is (= 2.0 (distance-from [-50 42] [-48 42])))
-            (is (= 50.0 (distance-from [100 99] [50 99])))
-            (is (= 1.25 (distance-from [1.25 6.789] [2.50 6.789]))))
+            (is (== 100 (distance-from [0 0] [100 0])))
+            (is (== 198 (distance-from [-99 -99] [99 -99])))
+            (is (== 2 (distance-from [-50 42] [-48 42])))
+            (is (== 50 (distance-from [100 99] [50 99])))
+            (is (== 1.25 (distance-from [1.25 6.789] [2.50 6.789]))))
         (testing "with vertical points"
-            (is (= 100.0 (distance-from [0 50] [0 -50])))
-            (is (= 100.0 (distance-from [-42 -50] [-42 50])))
-            (is (= 1.0 (distance-from [42 -99] [42 -98])))
-            (is (= 0.5 (distance-from [1.2345 6.0] [1.2345 6.5]))))
+            (is (== 100 (distance-from [0 50] [0 -50])))
+            (is (== 100 (distance-from [-42 -50] [-42 50])))
+            (is (== 1 (distance-from [42 -99] [42 -98])))
+            (is (== 0.5 (distance-from [1.2345 6.0] [1.2345 6.5]))))
         (testing "with equalateral triangles"
-            (is (= 5.0 (distance-from [0 0] [3.0 4.0])))
-            (is (= (* 5.0 Integer/MAX_VALUE) (distance-from [0 0] [(* 3.0 Integer/MAX_VALUE) (* 4.0 Integer/MAX_VALUE)]))))))
+            (is (== 5 (distance-from [0 0] [3.0 4.0])))
+            (is (== (* 5.0 Integer/MAX_VALUE) (distance-from [0 0] [(* 3.0 Integer/MAX_VALUE) (* 4.0 Integer/MAX_VALUE)]))))))
