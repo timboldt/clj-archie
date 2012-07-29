@@ -1,8 +1,9 @@
 (ns clj-archie.island
       (:use [clj-archie.util]))
 
-(comment "island structure"
-{   :population                 ;population
+(comment "Island structure"
+    :population                 ;population
+    :happiness                  ;happiness and well-being (100 is normal)
     :food-stored                ;food in storage
     :rawmat-stored              ;raw materials in storage
     :goods-stored               ;goods in storage
@@ -10,43 +11,80 @@
     :food-production-factor     ;# workers at which food production is 1:1
     :rawmat-production-factor   ;# workers at which raw resource production is 1:1
     :goods-production-factor    ;# workers at which manufactured goods production is 1:1)
-})
+    :gene                       ;a string representing the genome of this island
+)
 
-(defn- random-plus-minus [val plus-minus-pct]
-    (long (Math/round (* val (+ (- 1.0 plus-minus-pct) (rand (* 2.0 plus-minus-pct)))))))
+;-----------------------------
+; Random island generation
+;-----------------------------
 
-(defn random-island [map-width map-height]
+(defn random-island [map-width map-height gene]
     (let [
         pop (+ 50 (rand-int 500))
         ninety-percent (/ (* 10 pop) 9)
         twenty-percent (/ pop 5)]
         (hash-map
             :population pop
+            :happiness (random-plus-minus 100 0.1)
             :food-stored (random-plus-minus pop 0.1)
             :rawmat-stored (random-plus-minus pop 0.1)
             :goods-stored (random-plus-minus pop 0.1)
             :location [(rand map-width) (rand map-height)]
             :food-production-factor (random-plus-minus pop 0.3)
-            :rawmat-production-factor (random-plus-minus pop 0.5)
+            :rawmat-production-factor (random-plus-minus pop 0.9)
             :goods-production-factor (random-plus-minus pop 0.5)
+            :gene gene
             )))
 
-(defn str-island [{population :population location :location}]
-    (str "population=" (pad-num population 8) " location=" location))
+(defn random-island-seq [map-width map-height gene]
+    (cons
+        (random-island map-width map-height gene)
+        (lazy-seq (random-island-seq map-width map-height gene))
+        ))
 
-(comment "
---
--- Intermediate results
---
-")
+;-----------------------------
+; Genetics
+;-----------------------------
+
+(defn- decode-genome-char [c]
+    (- (int c) 64)
+    )
+
+(defn- gene-values [[a b c d]]
+    (list (+ a b c d) (+ b c d) (+ c d) d)
+    )
+
+(defn decode-genome [gene]
+    (map #(gene-values (map decode-genome-char %)) (partition 4 gene))
+    )
+
+;-----------------------------
+; Pretty printing
+;-----------------------------
+
+(defn str-island [island]
+    (str
+        "population=" (pad-num (:population island) 8)
+        "happiness=" (pad-num (:happiness island) 8)
+        "food,rawmat,goods=" (pad-num (list (:food-stored island) (:rawmat-stored island) (:goods-stored island)) 20)
+        "location=" (:location island) " "
+        "genome=" (:gene island)
+        ))
+
+;-----------------------------
+; Intermediate results
+;-----------------------------
 
 (defn food-produced [workers {factor :food-production-factor population :population}]
-    (diminished-return (min workers population) factor))
+    (assert (>= workers 0))
+    (* 2 (diminished-return (min workers population) factor)))
 
 (defn rawmat-produced [workers {factor :rawmat-production-factor population :population}]
+    (assert (>= workers 0))
     (diminished-return (min workers population) factor))
 
 (defn goods-produced [workers {factor :goods-production-factor population :population rawmat :rawmat-stored}]
+    (assert (>= workers 0))
     (min rawmat (diminished-return (min workers population) factor)))
 
 (defn food-consumed [{food :food-stored population :population}]
@@ -55,58 +93,74 @@
 (defn goods-consumed [{goods :goods-stored population :population}]
     (min goods population))
 
-(comment "
-prop_foodProduced workers pop =
-        (foodProduced workers i1) >= 0 &&
-        (foodProduced workers i1) <= (diminishedReturn (population i1) (foodProductionFactor i1))
-        where
-                i1 = (generateTestIslandWithResources pop 0 0 0)
-        
-prop_foodConsumed pop food =
-        pop > 0 ==>
-        (foodConsumed i1) >= 0 &&
-        (foodConsumed i1) <= (population i1)
-        where
-                i1 = (generateTestIslandWithResources pop food 0 0)
-")
+(defn calc-population [{food :food-stored population :population}]
+    (if (<= population 0)
+        0
+        (let [
+            starvation (long (max (- (* 0.75 population) food) 0))
+            births (long (* 0.03 population))
+            deaths (long (* 0.02 population))
+            ]
+            (constrain-within
+                (+
+                    (rand-int 2)
+                    population
+                    (- starvation)
+                    births
+                    (- deaths))
+                0 (* 2 population)))))
+
+(defn calc-happiness [{happiness :happiness food :food-stored goods :goods-stored population :population}]
+    (if (<= population 0)
+        0
+        (let [
+            food-quad (long (/ (* 4 food) population))
+            goods-quad (long (/ (* 4 goods) population))
+            ]
+            (constrain-within
+                (+
+                    happiness
+                    (case food-quad
+                        0 -50
+                        1 -25
+                        2 -10
+                        3 0
+                        4 10
+                        20)
+                    (case goods-quad
+                        0 -20
+                        1 -10
+                        2 -5
+                        3 0
+                        4 5
+                        10))
+                0 200))))
 
 
-(comment "
---
--- Year iteration
---
-")
+;-----------------------------
+; Year iteration
+;-----------------------------
 
 (defn next-year [[pct-food pct-raw] island]
+    ;>>>>> +/- trade of food/rawmat/goods and immigration/emmigration
     (let [
-        food-workers (* pct-food (:population island))
-        rawmat-workers (* pct-raw (:population island))
-        goods-workers (* (- 1.0 (+ pct-food pct-raw)) (:population island))]
+        food-workers (max 0 (* pct-food (:population island)))
+        rawmat-workers (max 0 (* pct-raw (:population island)))
+        goods-workers (- (:population island) food-workers rawmat-workers)]
         (hash-map
-            :population (+ 10 (:population island)) ;>>>>> +/- famine, births, deaths, immigration
-            ;>>>>> +/- trade of food/rawmat/goods
+            :population (calc-population island)
+            :happiness (calc-happiness island)
             :food-stored (+ (food-produced food-workers island) (- (food-consumed island)) (:food-stored island))
             :rawmat-stored (+ (rawmat-produced rawmat-workers island) (- (goods-produced goods-workers island)) (:rawmat-stored island))
             :goods-stored (+ (goods-produced goods-workers island) (- (goods-consumed island)) (:goods-stored island))
             :location (:location island)
             :food-production-factor (:food-production-factor island)
             :rawmat-production-factor (:rawmat-production-factor island)
-            :goods-production-factor (:goods-production-factor island))))
+            :goods-production-factor (:goods-production-factor island)
+            :gene (:gene island)
+            )))
 
 (defn many-years [n [pct-food pct-raw] island]
     (if (> n 0)
         (many-years (dec n) [pct-food pct-raw] (next-year [pct-food pct-raw] island))
         island))
-
-(comment "
-(many-years 0 [0.3 0.3] my-island)
-(many-years 1 [0.3 0.3] my-island)
-(many-years 2 [0.3 0.3] my-island)
-(many-years 100 [0.3 0.3] my-island)
-
-test_nextYear_immutables =
-        (fst (location i1)) @?= (fst (location i2))
-        where
-                i1 = (generateTestIslandAtLocation 1 2)
-                i2 = (nextYear i1 (50,25,25)))
-")

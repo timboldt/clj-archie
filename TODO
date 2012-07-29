@@ -1,14 +1,16 @@
 Island-Info
-	Population calculations (famine, births, deaths, immigration)
-	Happiness calculations (and what does happiness affect? immigration?)
-	Trade of food/rawmat/goods (affected by square of distance, kingdom membership, etc.)
+	Allocate workers based on gene
+	Fitness function
 Kingdom-Info
 	Set of islands
 	Trading rules
 	Rendering on screen as a polygon
 Archipelago-Info
-	All islands
-	Random generations of map
+	Fitness function
+	Yearly iteration
+	Trade of food/rawmat/goods (affected by square of distance?, kingdom membership?, etc.)
+	Immigration/emmigration
+	Trading rules
 	Rendering of map on screen
 
 	
